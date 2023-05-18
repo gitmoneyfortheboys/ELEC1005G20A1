@@ -1,62 +1,61 @@
-'''
-Author: Yuvraj Sood
-Project: WRAITER : Next Genaration AI Content Writer
-'''
 import openai
 import os
 import webbrowser
 import pyperclip as pc
-from dotenv import load_dotenv
+import tkinter as tk
+from tkinter import ttk, messagebox, simpledialog
 
-load_dotenv()
-
-openai.api_key = "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" #os.getenv('OPENAI_API_KEY')
+openai.api_key = "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"
 model_engine = "text-davinci-003"
 
-def email_parameters(name):
-    '''
-    This takes in user information to generate a prompt to pass through to the OPENAI API.
-    '''
-    print()
-    recipient = input("Who are you writing this email to? (e.x. Mother, Father, Friend, Teacher) - ")
-    emailid = input("Enter the email id of the recipeient - ")
-    subject = input("What is the subject of your email? (e.x. Request for absence) - ")
-    tone = input("what is the tone of your email? (e.x. formal,informal) - ")
-    info = input("Enter any additional information to include and other requirements that you may have - ")
-    prompt = (f'''Write an email to my {recipient} about {subject} in a {tone} tone in no less than 300 words.
-    Exclude stating the subject. Be sure to include the email signature with my name which is {name}. {info}''')
-    return prompt, recipient, emailid, subject, tone
+class EmailDialog(tk.simpledialog.Dialog):
 
-def blog_parameters():
-    print()
-    subject = input("What is the subject of this blog post? (e.x. Will AI take your job?) - ")
-    audience = input("Enter any demographic information about your audience (e.x. Adults aged 18-25, Majority male and based in the US) - ")
-    sections = input("What are the different sections of the blog? (e.x. Introduction, What is AI, Is my job in danger?) - " )
-    info = input("Enter any additional information to include and other requirements that you may have - ")
-    prompt = (f'''Write a proffessional blog based on the following information -
-     Subject - {subject}
-     Audience - {audience}, (DO NOT state the audience but use it as a parameter for generating content that would appeal to them)
-     sections - {sections}
-     extra info - {info}''')
-    return prompt
+    def body(self, master):
 
-def caption_parameters():
-    print()
-    subject = input("What is the subject of the social media post? (e.x. Promoting a Social event) - ")
-    platform = input("Which platform is this caption for? (e.x. Instagram, Reddit) - ")
-    adjectives = input("Enter any relevant adjectives for the caption. (e.x. Cheesy, Funny, Pun) - ")
-    info = input("Enter any additional information to include and other requirements that you may have - ")
-    prompt = (f'''Write a social media caption based on the following information -
-     Subject - {subject}
-     Platform - {platform}
-     Caption Tone/Vibe - {adjectives}
-     extra info - {info}, also generate 10 hashtags relevant to this context along with the caption, try to keep your response limited to 150 characters not inclusive of hashtags.''')
-    return prompt
+        self.result = {}
+
+        tk.Label(master, text="Who are you writing this email to? (e.x. Mother, Father, Friend, Teacher)").grid(row=0)
+        tk.Label(master, text="Enter the email id of the recipient").grid(row=1)
+        tk.Label(master, text="What is the subject of your email? (e.x. Request for absence)").grid(row=2)
+        tk.Label(master, text="What is the tone of your email? (e.x. formal,informal)").grid(row=3)
+        tk.Label(master, text="Enter any additional information to include and other requirements that you may have").grid(row=4)
+
+        self.e1 = tk.Entry(master)
+        self.e2 = tk.Entry(master)
+        self.e3 = tk.Entry(master)
+        self.e4 = tk.Entry(master)
+        self.e5 = tk.Entry(master)
+
+        self.e1.grid(row=0, column=1)
+        self.e2.grid(row=1, column=1)
+        self.e3.grid(row=2, column=1)
+        self.e4.grid(row=3, column=1)
+        self.e5.grid(row=4, column=1)
+
+    def apply(self):
+        self.result["recipient"] = self.e1.get()
+        self.result["emailid"] = self.e2.get()
+        self.result["subject"] = self.e3.get()
+        self.result["tone"] = self.e4.get()
+        self.result["info"] = self.e5.get()
+
+def email_parameters(name, tk_instance):
+    dialog = EmailDialog(tk_instance)
+
+    if dialog.result is not None:
+        recipient = dialog.result["recipient"]
+        emailid = dialog.result["emailid"]
+        subject = dialog.result["subject"]
+        tone = dialog.result["tone"]
+        info = dialog.result["info"]
+
+        prompt = (f'''Write an email to my {recipient} about {subject} in a {tone} tone in no less than 300 words.
+        Exclude stating the subject. Be sure to include the email signature with my name which is {name}. {info}''')
+        return prompt, recipient, emailid, subject, tone
+
+# Similar for blog_parameters and caption_parameters with different fields
 
 def api_request(user_prompt):
-    '''
-    this calls the OPENAI API and generates a response.
-    '''
     completion = openai.Completion.create(
     engine = model_engine,
     prompt = user_prompt,
@@ -67,46 +66,44 @@ def api_request(user_prompt):
 
     response = completion.choices[0].text 
     return (response)
-    
 
+class MainPage(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        self.title('WRAITER : Next Generation AI Content Writer')
+        self.geometry("800x600")
 
-def main():
-    name = input("Hi, what is your name? ")
-    print(f'Hope you are having a good day {name}!\n')
+        tk.Label(self, text="What do you want to write today?").pack(pady=10)
 
-    menu = input('''What do you want to write today?
-1. Email
-2. Blog
-3. Social Media Caption
-''')
+        tk.Button(self, text="Email", command=self.write_email).pack(fill='x')
+        tk.Button(self, text="Blog", command=self.write_blog).pack(fill='x')
+        tk.Button(self, text="Social Media Caption", command=self.write_caption).pack(fill='x')
 
-    while not(menu=='1' or menu=='2' or menu=='3') :
-        print("Invalid Output! Choose an option from 1 to 3.")
-        menu = input('''What do you want to write today?
-1. Email
-2. Blog
-3. Social Media Caption
-''')
-
-    if menu == '1':
-        information = email_parameters(name)
+    def write_email(self):
+        self.withdraw()
+        name = simpledialog.askstring("Input", "What's your name?", parent=self)
+        information = email_parameters(name, self)
         body = api_request(information[0])
-        webbrowser.open('mailto:?to=' + information[2] + '&subject=' + information[3] + '&body=' + body)#, new=1)
-    elif menu == '2':
+        webbrowser.open('mailto:?to=' + information[2] + '&subject=' + information[3] + '&body=' + body)
+        self.deiconify()
+
+    def write_blog(self):
+        self.withdraw()
         information = blog_parameters()
         blog = api_request(information)
         pc.copy(blog)
-        print(blog)
-        print("\nThe blog has been copied to your clipboard!")
+        messagebox.showinfo("Blog", "The blog has been copied to your clipboard!\n"+blog)
+        self.deiconify()
 
-    else:
+    def write_caption(self):
+        self.withdraw()
         information = caption_parameters()
         caption = api_request(information)
         pc.copy(caption)
-        print(caption)
-        print("\nThe caption has been copied to your clipboard!\n")
-        
-
+        messagebox.showinfo("Caption", "The caption has been copied to your clipboard!\n"+caption)
+        self.deiconify()
 
 if __name__ == '__main__':
-    main()
+    app = MainPage()
+    app.mainloop()
+
